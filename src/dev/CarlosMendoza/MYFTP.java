@@ -3,6 +3,7 @@ package dev.CarlosMendoza;
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
 import java.util.Scanner;
 
 public class MYFTP {
@@ -113,7 +114,7 @@ public class MYFTP {
                     System.out.println("Found get");
                     break;
                 case "put":
-                    System.out.println("Found put");
+                    put(tokens);
                     break;
                 case "delete":
                     delete(tokens);
@@ -290,4 +291,139 @@ public class MYFTP {
         }
 
     }
+
+    private void put(String[] tokens) {
+        if (tokens.length < 2) {
+            System.out.println("delete requires path argument");
+            return;
+        }
+        //Enter passive mode
+        String res = "";
+        try {
+            bufferedWriter.write("PASV\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("227 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
+
+        String host = "";
+        int port = -1;
+        int subBegin = res.indexOf('(') + 1;
+        int subEnd = res.indexOf(')');
+        String[] resTokens = res.substring(subBegin, subEnd).split(",");
+
+        host = resTokens[0] + "." + resTokens[1] + "." + resTokens[2] + "." + resTokens[3];
+        port = Integer.parseInt(resTokens[4]) * 256 + Integer.parseInt(resTokens[5]);
+
+        Socket dataSocket = null;
+        try {
+            dataSocket = new Socket(host, port);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
+
+        try {
+            bufferedWriter.write("STOR " + tokens[1] + "\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("150 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
+
+        File file = new File(tokens[1]);
+        if (!file.exists()) {
+            System.out.println("ftp: file does not exist");
+            return;
+        } else if (file.isDirectory()) {
+            System.out.println("ftp: cannot put directory");
+        }
+
+        InputStream fileStream = null;
+        try {
+            fileStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        BufferedOutputStream bufferData = null;
+        BufferedInputStream inputStream = null;
+        try {
+            bufferData = new BufferedOutputStream(dataSocket.getOutputStream());
+            inputStream = new BufferedInputStream(fileStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        byte[] data = new byte[4096];
+        int bytesRead = 0;
+        int totalBytes = 0;
+        boolean stop = false;
+        Timestamp startTime = new Timestamp(System.currentTimeMillis());
+        while (!stop) {
+            try {
+                bytesRead = inputStream.read(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (bytesRead == -1) {
+                stop = true;
+                continue;
+            }
+
+            totalBytes += bytesRead;
+            try {
+                bufferData.write(data, 0, bytesRead);
+                bufferData.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        Timestamp endTime = new Timestamp(System.currentTimeMillis());
+        try {
+            bufferData.close();
+            inputStream.close();
+            fileStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("226 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+        }
+
+        System.out.println(totalBytes + " bytes sent in " + (endTime.getTime() - startTime.getTime()) + " ms");
+
+    }
+
+
 }
