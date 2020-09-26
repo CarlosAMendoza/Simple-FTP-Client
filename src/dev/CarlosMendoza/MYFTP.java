@@ -93,17 +93,49 @@ public class MYFTP {
             return;
         }
 
+        //Once successfully logged in then perform command loops until quit or application close
         Boolean exit = false;
         while (!exit) {
             System.out.print("ftp> ");
             userIn = userScan.nextLine();
             if (userIn.isEmpty()) continue;
 
-            String tokens[] = userIn.split(" ");
+            String[] tokens = userIn.split(" ");
 
-            switch (tokens[0]){
+            switch (tokens[0]) {
                 case "ls":
                     System.out.println("Found ls");
+                    break;
+                case "cd":
+                    System.out.println("Found cd");
+                    break;
+                case "get":
+                    System.out.println("Found get");
+                    break;
+                case "put":
+                    System.out.println("Found put");
+                    break;
+                case "delete":
+                    System.out.println("Found delete");
+                    break;
+                case "quit":
+                    try {
+                        bufferedWriter.write("QUIT\r\n");
+                        bufferedWriter.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        res = bufferedReader.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (res.startsWith("221 ")) {
+                        System.out.println(res);
+                    } else {
+                        System.out.println("Error: " + res);
+                    }
+                    exit = true;
                     break;
                 default:
                     System.out.println("Invalid command");
