@@ -107,7 +107,7 @@ public class MYFTP {
                     System.out.println("Found ls");
                     break;
                 case "cd":
-                    System.out.println("Found cd");
+                    cd(tokens);
                     break;
                 case "get":
                     System.out.println("Found get");
@@ -144,4 +144,29 @@ public class MYFTP {
 
     }
 
+    private void cd(String[] tokens) {
+        if (tokens.length < 2) {
+            System.out.println("cd requires path argument");
+            return;
+        }
+        String res = "";
+        try {
+            bufferedWriter.write("CWD " + tokens[1] + "\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("250 ")) {
+            System.out.println(res);
+        } else if (res.startsWith("550 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+        }
+    }
 }
