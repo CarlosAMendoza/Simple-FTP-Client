@@ -116,7 +116,7 @@ public class MYFTP {
                     System.out.println("Found put");
                     break;
                 case "delete":
-                    System.out.println("Found delete");
+                    delete(tokens);
                     break;
                 case "quit":
                     try {
@@ -144,6 +144,7 @@ public class MYFTP {
 
     }
 
+    //Performs cd operations and returns of it is missing a path
     private void cd(String[] tokens) {
         if (tokens.length < 2) {
             System.out.println("cd requires path argument");
@@ -152,6 +153,33 @@ public class MYFTP {
         String res = "";
         try {
             bufferedWriter.write("CWD " + tokens[1] + "\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("250 ")) {
+            System.out.println(res);
+        } else if (res.startsWith("550 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+        }
+    }
+
+    //performs delete command and returns if missing path
+    private void delete(String[] tokens) {
+        if (tokens.length < 2) {
+            System.out.println("delete requires path argument");
+            return;
+        }
+        String res = "";
+        try {
+            bufferedWriter.write("DELE " + tokens[1] + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
