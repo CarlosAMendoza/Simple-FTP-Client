@@ -44,7 +44,7 @@ public class MYFTP {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (res.startsWith("220 ")){
+        if (res.startsWith("220 ")) {
             System.out.println(res);
         } else {
             System.out.println("Error: " + res);
@@ -55,7 +55,7 @@ public class MYFTP {
         try {
             System.out.print("Name: ");
             userIn = userScan.nextLine();
-            bufferedWriter.write("USER "+userIn+"\r\n");
+            bufferedWriter.write("USER " + userIn + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -65,7 +65,7 @@ public class MYFTP {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (res.startsWith("331 ")){
+        if (res.startsWith("331 ")) {
             System.out.println(res);
         } else {
             System.out.println("Error: " + res);
@@ -76,7 +76,7 @@ public class MYFTP {
         try {
             System.out.print("Password: ");
             userIn = userScan.nextLine();
-            bufferedWriter.write("PASS "+userIn+"\r\n");
+            bufferedWriter.write("PASS " + userIn + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -86,7 +86,7 @@ public class MYFTP {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (res.startsWith("230 ")){
+        if (res.startsWith("230 ")) {
             System.out.println(res);
         } else {
             System.out.println("Error: " + res);
@@ -104,7 +104,7 @@ public class MYFTP {
 
             switch (tokens[0]) {
                 case "ls":
-                    System.out.println("Found ls");
+                    ls(tokens);
                     break;
                 case "cd":
                     cd(tokens);
@@ -196,5 +196,98 @@ public class MYFTP {
         } else {
             System.out.println("Error: " + res);
         }
+    }
+
+    private void ls(String[] tokens) {
+        //Enter passive mode
+        String res = "";
+        try {
+            bufferedWriter.write("PASV\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("227 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
+
+        String host = "";
+        int port = -1;
+        int subBegin = res.indexOf('(') + 1;
+        int subEnd = res.indexOf(')');
+        String[] resTokens = res.substring(subBegin, subEnd).split(",");
+
+        host = resTokens[0] + "." + resTokens[1] + "." + resTokens[2] + "." + resTokens[3];
+        port = Integer.parseInt(resTokens[4]) * 256 + Integer.parseInt(resTokens[5]);
+
+        Socket dataSocket = null;
+        try {
+            dataSocket = new Socket(host, port);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
+
+        try {
+            bufferedWriter.write("LIST\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("150 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
+
+        BufferedReader bufferData = null;
+        try {
+            bufferData = new BufferedReader(new InputStreamReader(dataSocket.getInputStream()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        do {
+            try {
+                res = bufferData.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (res != null) {
+                System.out.println(res);
+            }
+        } while (res != null);
+
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("226 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+        }
+
+
+        try {
+            bufferData.close();
+            dataSocket.close();
+        } catch (IOException e) {
+        }
+
     }
 }
