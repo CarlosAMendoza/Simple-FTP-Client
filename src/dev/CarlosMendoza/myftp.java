@@ -2,11 +2,10 @@ package dev.CarlosMendoza;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.Scanner;
 
-public class MYFTP {
+public class myftp {
 
     private Socket socket = null;
     private BufferedReader bufferedReader = null;
@@ -19,11 +18,11 @@ public class MYFTP {
             return;
         }
 
-        MYFTP myftp = new MYFTP(args[0]);
+        myftp myftp = new myftp(args[0]);
 
     }
 
-    public MYFTP(String host) {
+    public myftp(String host) {
 
         userScan = new Scanner(System.in);
 
@@ -111,7 +110,7 @@ public class MYFTP {
                     cd(tokens);
                     break;
                 case "get":
-                    System.out.println("Found get");
+                    get(tokens);
                     break;
                 case "put":
                     put(tokens);
@@ -425,5 +424,132 @@ public class MYFTP {
 
     }
 
+    private void get(String[] tokens) {
+        if (tokens.length < 2) {
+            System.out.println("delete requires path argument");
+            return;
+        }
+        //Enter passive mode
+        String res = "";
+        try {
+            bufferedWriter.write("PASV\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("227 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
 
+        String host = "";
+        int port = -1;
+        int subBegin = res.indexOf('(') + 1;
+        int subEnd = res.indexOf(')');
+        String[] resTokens = res.substring(subBegin, subEnd).split(",");
+
+        host = resTokens[0] + "." + resTokens[1] + "." + resTokens[2] + "." + resTokens[3];
+        port = Integer.parseInt(resTokens[4]) * 256 + Integer.parseInt(resTokens[5]);
+
+        Socket dataSocket = null;
+        try {
+            dataSocket = new Socket(host, port);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
+
+        try {
+            bufferedWriter.write("RETR " + tokens[1] + "\r\n");
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("150 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+            return;
+        }
+
+        File file = new File(tokens[1]);
+
+        OutputStream fileStream = null;
+
+        try {
+            fileStream = new FileOutputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        InputStream bufferData = null;
+        BufferedOutputStream outputStream = null;
+        try {
+            bufferData = dataSocket.getInputStream();
+            outputStream = new BufferedOutputStream(fileStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        byte[] data = new byte[4096];
+        int bytesRead = 0;
+        int totalBytes = 0;
+        boolean stop = false;
+        Timestamp startTime = new Timestamp(System.currentTimeMillis());
+
+        while (!stop) {
+            try {
+                bytesRead = bufferData.read(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (bytesRead == -1) {
+                stop = true;
+                continue;
+            } else {
+                totalBytes += bytesRead;
+            }
+
+            try {
+                outputStream.write(data, 0, bytesRead);
+                outputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        Timestamp endTime = new Timestamp(System.currentTimeMillis());
+        try {
+            bufferData.close();
+            outputStream.close();
+            fileStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            res = bufferedReader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (res.startsWith("226 ")) {
+            System.out.println(res);
+        } else {
+            System.out.println("Error: " + res);
+        }
+
+        System.out.println(totalBytes + " bytes received in " + (endTime.getTime() - startTime.getTime()) + " ms");
+    }
 }
