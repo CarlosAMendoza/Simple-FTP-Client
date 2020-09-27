@@ -7,12 +7,14 @@ import java.util.Scanner;
 
 public class myftp {
 
+
     private Socket socket = null;
     private BufferedReader bufferedReader = null;
     private BufferedWriter bufferedWriter = null;
-    private Scanner userScan = null;
+    private Scanner userScan = null; //Keyboard input
 
     public static void main(String[] args) {
+        //In the event that it is entered incorrectly
         if (args.length == 0) {
             System.out.println("Usage: myftp server-name");
             return;
@@ -22,10 +24,11 @@ public class myftp {
 
     }
 
+    //Main driving function
     public myftp(String host) {
 
+        //Initialize base value, ftp has a port of 21 so hardcoded
         userScan = new Scanner(System.in);
-
         try {
             socket = new Socket(host, 21);
             bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -42,7 +45,7 @@ public class myftp {
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("220 ")) {
             System.out.println(res);
@@ -58,12 +61,12 @@ public class myftp {
             bufferedWriter.write("USER " + userIn + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("331 ")) {
             System.out.println(res);
@@ -79,12 +82,12 @@ public class myftp {
             bufferedWriter.write("PASS " + userIn + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("230 ")) {
             System.out.println(res);
@@ -123,12 +126,12 @@ public class myftp {
                         bufferedWriter.write("QUIT\r\n");
                         bufferedWriter.flush();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        System.out.println("Error: " + e);
                     }
                     try {
                         res = bufferedReader.readLine();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        System.out.println("Error: " + e);
                     }
                     if (res.startsWith("221 ")) {
                         System.out.println(res);
@@ -146,6 +149,7 @@ public class myftp {
 
     //Performs cd operations and returns of it is missing a path
     private void cd(String[] tokens) {
+        //Needs an argument
         if (tokens.length < 2) {
             System.out.println("cd requires path argument");
             return;
@@ -155,12 +159,12 @@ public class myftp {
             bufferedWriter.write("CWD " + tokens[1] + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("250 ")) {
             System.out.println(res);
@@ -182,12 +186,12 @@ public class myftp {
             bufferedWriter.write("DELE " + tokens[1] + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("250 ")) {
             System.out.println(res);
@@ -205,12 +209,12 @@ public class myftp {
             bufferedWriter.write("PASV\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("227 ")) {
             System.out.println(res);
@@ -219,6 +223,7 @@ public class myftp {
             return;
         }
 
+        //initiate datasocket from passive command
         String host = "";
         int port = -1;
         int subBegin = res.indexOf('(') + 1;
@@ -234,17 +239,17 @@ public class myftp {
         } catch (IOException e) {
             System.out.println("Error: " + e);
         }
-
+        //once data socket setup tell server to send data through data socket
         try {
             bufferedWriter.write("LIST\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("150 ")) {
             System.out.println(res);
@@ -252,19 +257,19 @@ public class myftp {
             System.out.println("Error: " + res);
             return;
         }
-
+        //Get stream from server and print until end of stream
         BufferedReader bufferData = null;
         try {
             bufferData = new BufferedReader(new InputStreamReader(dataSocket.getInputStream()));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         do {
             try {
                 res = bufferData.readLine();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error: " + e);
             }
             if (res != null) {
                 System.out.println(res);
@@ -274,7 +279,7 @@ public class myftp {
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("226 ")) {
             System.out.println(res);
@@ -291,6 +296,7 @@ public class myftp {
 
     }
 
+    //responsible for putting data on the server, also initiates a passive connection for data socket
     private void put(String[] tokens) {
         if (tokens.length < 2) {
             System.out.println("delete requires path argument");
@@ -302,12 +308,12 @@ public class myftp {
             bufferedWriter.write("PASV\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("227 ")) {
             System.out.println(res);
@@ -336,12 +342,12 @@ public class myftp {
             bufferedWriter.write("STOR " + tokens[1] + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("150 ")) {
             System.out.println(res);
@@ -362,7 +368,7 @@ public class myftp {
         try {
             fileStream = new FileInputStream(file);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         BufferedOutputStream bufferData = null;
@@ -371,7 +377,7 @@ public class myftp {
             bufferData = new BufferedOutputStream(dataSocket.getOutputStream());
             inputStream = new BufferedInputStream(fileStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         byte[] data = new byte[4096];
@@ -383,7 +389,7 @@ public class myftp {
             try {
                 bytesRead = inputStream.read(data);
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error: " + e);
             }
             if (bytesRead == -1) {
                 stop = true;
@@ -395,24 +401,26 @@ public class myftp {
                 bufferData.write(data, 0, bytesRead);
                 bufferData.flush();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error: " + e);
             }
 
         }
 
         Timestamp endTime = new Timestamp(System.currentTimeMillis());
+
+        //important to close bufferData otherwise the server doesnt know when the stream will stop
         try {
             bufferData.close();
             inputStream.close();
             fileStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("226 ")) {
             System.out.println(res);
@@ -424,6 +432,7 @@ public class myftp {
 
     }
 
+    //similar to the put method but instead the streams are reversed in direction
     private void get(String[] tokens) {
         if (tokens.length < 2) {
             System.out.println("delete requires path argument");
@@ -435,12 +444,12 @@ public class myftp {
             bufferedWriter.write("PASV\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("227 ")) {
             System.out.println(res);
@@ -469,12 +478,12 @@ public class myftp {
             bufferedWriter.write("RETR " + tokens[1] + "\r\n");
             bufferedWriter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("150 ")) {
             System.out.println(res);
@@ -490,7 +499,7 @@ public class myftp {
         try {
             fileStream = new FileOutputStream(file);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         InputStream bufferData = null;
@@ -499,7 +508,7 @@ public class myftp {
             bufferData = dataSocket.getInputStream();
             outputStream = new BufferedOutputStream(fileStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         byte[] data = new byte[4096];
@@ -512,7 +521,7 @@ public class myftp {
             try {
                 bytesRead = bufferData.read(data);
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error: " + e);
             }
             if (bytesRead == -1) {
                 stop = true;
@@ -525,7 +534,7 @@ public class myftp {
                 outputStream.write(data, 0, bytesRead);
                 outputStream.flush();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error: " + e);
             }
 
         }
@@ -536,13 +545,13 @@ public class myftp {
             outputStream.close();
             fileStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
 
         try {
             res = bufferedReader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e);
         }
         if (res.startsWith("226 ")) {
             System.out.println(res);
